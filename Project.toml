@@ -1,0 +1,13 @@
+name = "GeomOpt"
+uuid = "8cbd39a5-1a9b-44cd-937f-0b9987b92f0d"
+authors = ["CedricTravelletti <cedrictravelletti@gmail.com> and contributors"]
+version = "1.0.0-DEV"
+
+[compat]
+julia = "1.8"
+
+[extras]
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+
+[targets]
+test = ["Test"]
