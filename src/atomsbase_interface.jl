@@ -4,7 +4,7 @@
 #
 export fractional_to_cartesian, cartesian_to_fractional, update_positions, update_positions_cart
 export update_optimizable_coordinates_cart, update_optimizable_coordinates, set_optimizable_mask, get_positions, get_positions_cart
-export n_optimizable_coordinates, get_optimizable_mask, mask_vector_list
+export n_optimizable_coordinates, get_optimizable_mask, mask_vector_list, clamp_atoms
 
 @doc raw"""
     fractional_to_cartesian(system::AbstractSystem, positions::AbstractVector{<:AbstractVector{<:Real}})
@@ -185,8 +185,27 @@ function get_optimizable_mask(system::AbstractSystem)
     [a[:optimizable] for a in system.particles]
 end
 
+@doc raw"""
+    Given a list of vectors and a mask, return the masked version in a one-dimensional list.
+
+    """
 function mask_vector_list(x::AbstractVector{<:AbstractVector{<:Any}}, mask::AbstractVector{<:AbstractVector{<:Bool}})
     tmp = [element[maskelement] for (element, maskelement) in zip(x, mask)]
     # Remove empty subarrays.
     [t for t in tmp if !isempty(t)]
+end
+
+@doc raw"""
+    Clamp given atoms if the system. Clamped atoms are fixed and their positions 
+    will not be optimized. The atoms to be clamped should be given as a list of 
+    indies corresponding to their positions in system.particles.
+
+    """
+function clamp_atoms(system::AbstractSystem, clamped_indexes::Union{AbstractVector{<:Integer},Nothing})
+    mask = [trues(3) for _ in eachindex(system.particles)]
+    if !isnothing(clamped_indexes)
+        mask[clamped_indexes] = falses(3)
+    end
+    clamped_system = set_optimizable_mask(system, mask)
+    return clamped_system
 end

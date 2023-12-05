@@ -3,7 +3,8 @@
 #
 export energy_wrt_positions, forces_wrt_positions, construct_optimization_problem
 
-abstract type AbstractCalculator end
+using AtomsCalculators
+
 
 # TODO: deprecated.
 function energy_wrt_positions(system::AbstractSystem, positions::AbstractVector{<:AbstractVector{T}}, calculator::AbstractCalculator) where {T <: Real}
