@@ -1,9 +1,9 @@
 module GeomOpt
 using LinearAlgebra
 using StaticArrays
-using Optim
+using Optim, LineSearches
 using AtomsBase
-import AtomsCalculators
+using AtomsCalculators
 using Unitful
 using UnitfulAtomic
 
