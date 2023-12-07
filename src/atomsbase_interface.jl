@@ -187,12 +187,14 @@ end
 
 @doc raw"""
     Given a list of vectors and a mask, return the masked version in a one-dimensional list.
+    This is used to concatenate the forces returned in the scfres into a single list, 
+    that can be used by the optimizer.
 
     """
 function mask_vector_list(x::AbstractVector{<:AbstractVector{<:Any}}, mask::AbstractVector{<:AbstractVector{<:Bool}})
     tmp = [element[maskelement] for (element, maskelement) in zip(x, mask)]
-    # Remove empty subarrays.
-    [t for t in tmp if !isempty(t)]
+    # Remove empty subarrays and concatenate.
+    vcat(tmp...)
 end
 
 @doc raw"""
