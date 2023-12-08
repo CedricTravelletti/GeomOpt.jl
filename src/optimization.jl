@@ -64,3 +64,18 @@ function optimize_geometry(system::AbstractSystem, calculator::AbstractCalculato
     end
     optimize(f, x0, method, optim_options; kwargs...)
 end
+function optimize_geometry(system::AbstractSystem, calculator::AbstractCalculator;
+        no_gradients=false,
+        method=Optim.NelderMead(),
+        optim_options=Optim.Options(show_trace=true,extended_trace=true), kwargs...)
+    # Use current system parameters as starting positions.
+    x0 = austrip.(get_optimizable_coordinates_cart(system)) # Optim modifies x0 in-place, so need a mutable type.
+
+    if no_gradients
+        f = construct_optimization_function(system, calculator; kwargs...)
+    else
+        fg! = construct_optimization_function_w_gradients(system, calculator; kwargs...)
+        f = Optim.only_fg!(fg!)
+    end
+    optimize(f, x0, method, optim_options; kwargs...)
+end
