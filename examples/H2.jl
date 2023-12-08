@@ -24,7 +24,7 @@ system = periodic_system(lattice, atoms, positions)
 system = clamp_atoms(system, nothing)
 
 # Create a simple calculator for the model.
-calculator = DFTKCalculator(system; Ecut=Ecut, kgrid=kgrid, tol=tol, verbose=true)
+calculator = DFTKCalculator(system; Ecut, kgrid, tol, verbose_scf=true)
 
 method = Optim.NelderMead()
 optim_options = Optim.Options(f_tol=1e-32, iterations=20, show_trace=true,extended_trace=true)

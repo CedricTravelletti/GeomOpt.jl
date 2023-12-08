@@ -39,23 +39,22 @@ al_supercell = build_al_supercell(1)
 al_supercell = clamp_atoms(al_supercell, nothing)
 
 # Create a simple calculator for the model.
-calculator = DFTKCalculator(;Ecut=30.0, kgrid=[4, 4, 4], tol=1e-6, temperature=1e-4, verbose=true)
+calculator = DFTKCalculator(al_supercell; Ecut=30.0, kgrid=[7, 7, 7], tol=1e-6, temperature=1e-4, verbose_scf=true)
 
 # Starting position is a random perturbation of the equilibrium one.
 Random.seed!(1234)
 x0 = vcat(get_positions_cart(al_supercell)...)
-σ = 0.3u"angstrom"; x0_pert = x0 + σ * rand(Float64, size(x0))
+σ = 0.5u"angstrom"; x0_pert = x0 + σ * rand(Float64, size(x0))
 
 energy_true = AtomsCalculators.potential_energy(al_supercell, calculator)
 energy_pert = AtomsCalculators.potential_energy(
-                update_optimizable_coordinates_cart(al_supercell, x0_pert), calculator)
+                update_optimizable_coordinates_cart(al_supercell, x0_pert), calculator, calculator.state)
 @printf "Initial guess distance (norm) from true parameters %.3e bohrs.\n" austrip(norm(x0 - x0_pert))
 @printf "Initial regret %.3e.\n" energy_pert - energy_true
 
-# linesearch = LineSearches.BackTracking(order=2, ρ_lo=0.01, ρ_hi=0.5, c_1=100.0, maxstep=1.0, iterations=2)
-linesearch = LineSearches.Static()
-method = Optim.BFGS(;alphaguess=InitialStatic(alpha=10), linesearch=linesearch)
+method = Optim.LBFGS()
+optim_options = Optim.Options(f_tol=1e-32, iterations=10, show_trace=true,extended_trace=true)
+
 results = optimize_geometry(al_supercell, calculator, austrip.(x0_pert);
-            method=method,
-            optim_options=Optim.Options(f_tol=1e-32, iterations=10, show_trace=true,extended_trace=true))
+            method=method, optim_options=optim_options)
 println(results)

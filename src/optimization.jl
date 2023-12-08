@@ -7,6 +7,10 @@ https://github.com/JuliaNLSolvers/Optim.jl/blob/master/docs/src/user/tipsandtric
 This is the reason for the cumbersome implementation of optimization with gradients.
 =#
 
+# TODO: Optimization with only_fg! does not seem to be working (function is re-called upon gradient computation). 
+# Given that the initial guess in the SCF now reduces that computation time to nothing, do we really want 
+# to use this convoluted syntax?
+
 export construct_optimization_function, construct_optimization_function_w_gradients, optimize_geometry
 
 
