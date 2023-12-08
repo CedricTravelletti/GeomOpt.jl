@@ -21,12 +21,12 @@ function construct_optimization_function(system::AbstractSystem, calculator::Abs
         function(x::AbstractVector{<:Real})
             x = 1u"bohr" .* x # Work in atomic units.
             new_system = update_optimizable_coordinates_cart(system, x)
-            AtomsCalculators.potential_energy(new_system, calculator; kwargs...)
+            AtomsCalculators.potential_energy(new_system, calculator, calculator.state; kwargs...)
         end
     else
         function(x::AbstractVector{<:Real})
             new_system = update_optimizable_coordinates(system, x)
-            AtomsCalculators.potential_energy(new_system, calculator; kwargs...)
+            AtomsCalculators.potential_energy(new_system, calculator, calculator.state; kwargs...)
         end
     end
     return f
@@ -36,9 +36,9 @@ function construct_optimization_function_w_gradients(system::AbstractSystem, cal
     fg! = function(F::Union{Nothing, Real}, G::Union{Nothing, AbstractVector{<:Real}}, x::AbstractVector{<:Real})
         x = 1u"bohr" .* x # Work in atomic units.
         new_system = update_optimizable_coordinates_cart(system, x)
-        energy = AtomsCalculators.potential_energy(new_system, calculator; kwargs...)
+        energy = AtomsCalculators.potential_energy(new_system, calculator, calculator.state; kwargs...)
         if G != nothing
-            forces = AtomsCalculators.forces(system, calculator; precomputed=true, kwargs...)
+            forces = AtomsCalculators.forces(new_system, calculator, calculator.state; kwargs...)
             # Translate the forces vectors on each particle to a single gradient for the optimization parameter.
             forces_concat = mask_vector_list(forces, get_optimizable_mask(new_system))
             G .= forces_concat
