@@ -4,7 +4,7 @@
 #
 export fractional_to_cartesian, cartesian_to_fractional, update_positions, update_positions_cart
 export update_optimizable_coordinates_cart, update_optimizable_coordinates, set_optimizable_mask, get_positions, get_positions_cart
-export n_optimizable_coordinates, get_optimizable_mask, mask_vector_list, clamp_atoms
+export n_optimizable_coordinates, get_optimizable_mask, get_optimizable_coordinates_cart, mask_vector_list, clamp_atoms
 
 @doc raw"""
     fractional_to_cartesian(system::AbstractSystem, positions::AbstractVector{<:AbstractVector{<:Real}})
@@ -195,6 +195,12 @@ function mask_vector_list(x::AbstractVector{<:AbstractVector{<:Any}}, mask::Abst
     tmp = [element[maskelement] for (element, maskelement) in zip(x, mask)]
     # Remove empty subarrays and concatenate.
     vcat(tmp...)
+end
+
+function get_optimizable_coordinates_cart(system::AbstractSystem)
+    positions = get_positions_cart(system)
+    mask = get_optimizable_mask(system)
+    mask_vector_list(positions, mask)
 end
 
 @doc raw"""
