@@ -20,7 +20,7 @@ export construct_optimization_function, construct_optimization_function_w_gradie
     are used.
 
 """
-function construct_optimization_function(system::AbstractSystem, calculator::AbstractCalculator; cartesian=true, kwargs...)
+function construct_optimization_function(system::AbstractSystem, calculator; cartesian=true, kwargs...)
     f = if cartesian
         function(x::AbstractVector{<:Real})
             x = 1u"bohr" .* x # Work in atomic units.
@@ -36,7 +36,7 @@ function construct_optimization_function(system::AbstractSystem, calculator::Abs
     return f
 end
 
-function construct_optimization_function_w_gradients(system::AbstractSystem, calculator::AbstractCalculator; cartesian=true, kwargs...)
+function construct_optimization_function_w_gradients(system::AbstractSystem, calculator; cartesian=true, kwargs...)
     fg! = function(F::Union{Nothing, Real}, G::Union{Nothing, AbstractVector{<:Real}}, x::AbstractVector{<:Real})
         x = 1u"bohr" .* x # Work in atomic units.
         new_system = update_optimizable_coordinates_cart(system, x)
@@ -54,7 +54,7 @@ function construct_optimization_function_w_gradients(system::AbstractSystem, cal
     return fg!
 end
 
-function optimize_geometry(system::AbstractSystem, calculator::AbstractCalculator, x0::AbstractVector{<:Real};
+function optimize_geometry(system::AbstractSystem, calculator, x0::AbstractVector{<:Real};
         no_gradients=false,
         method=Optim.NelderMead(),
         optim_options=Optim.Options(show_trace=true,extended_trace=true), kwargs...)
@@ -68,7 +68,7 @@ function optimize_geometry(system::AbstractSystem, calculator::AbstractCalculato
     end
     optimize(f, x0, method, optim_options; kwargs...)
 end
-function optimize_geometry(system::AbstractSystem, calculator::AbstractCalculator;
+function optimize_geometry(system::AbstractSystem, calculator;
         no_gradients=false,
         method=Optim.NelderMead(),
         optim_options=Optim.Options(show_trace=true,extended_trace=true), kwargs...)
