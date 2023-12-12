@@ -5,6 +5,11 @@ evaluation, one has to use the fix described at:
 https://github.com/JuliaNLSolvers/Optim.jl/blob/master/docs/src/user/tipsandtricks.md
 
 This is the reason for the cumbersome implementation of optimization with gradients.
+
+Note that by default all particles in the system are assumed optimizable.
+
+IMPORTANT: Note that we always work in cartesian coordinates.
+
 =#
 
 # TODO: Optimization with only_fg! does not seem to be working (function is re-called upon gradient computation). 
@@ -20,35 +25,29 @@ export construct_optimization_function, construct_optimization_function_w_gradie
     are used.
 
 """
-function construct_optimization_function(system::AbstractSystem, calculator; cartesian=true, kwargs...)
-    f = if cartesian
-        function(x::AbstractVector{<:Real})
+function construct_optimization_function(system::AbstractSystem, calculator; kwargs...)
+    f = function(x::AbstractVector{<:Real})
             x = 1u"bohr" .* x # Work in atomic units.
-            new_system = update_optimizable_coordinates_cart(system, x)
-            AtomsCalculators.potential_energy(new_system, calculator, calculator.state; kwargs...)
-        end
-    else
-        function(x::AbstractVector{<:Real})
             new_system = update_optimizable_coordinates(system, x)
-            AtomsCalculators.potential_energy(new_system, calculator, calculator.state; kwargs...)
-        end
+            austrip(AtomsCalculators.potential_energy(new_system, calculator; kwargs...))
     end
     return f
 end
 
-function construct_optimization_function_w_gradients(system::AbstractSystem, calculator; cartesian=true, kwargs...)
+function construct_optimization_function_w_gradients(system::AbstractSystem, calculator; kwargs...)
     fg! = function(F::Union{Nothing, Real}, G::Union{Nothing, AbstractVector{<:Real}}, x::AbstractVector{<:Real})
         x = 1u"bohr" .* x # Work in atomic units.
-        new_system = update_optimizable_coordinates_cart(system, x)
-        energy = AtomsCalculators.potential_energy(new_system, calculator, calculator.state; kwargs...)
+        new_system = update_optimizable_coordinates(system, x)
+        energy = AtomsCalculators.potential_energy(new_system, calculator; kwargs...)
         if G != nothing
-            forces = AtomsCalculators.forces(new_system, calculator, calculator.state; kwargs...)
+            forces = AtomsCalculators.forces(new_system, calculator; kwargs...)
             # Translate the forces vectors on each particle to a single gradient for the optimization parameter.
             forces_concat = mask_vector_list(forces, get_optimizable_mask(new_system))
-            G .= forces_concat
+            # NOTE: minus sign since forces are opposite to gradient.
+            G .= - austrip.(forces_concat)
         end
         if F != nothing
-          return energy
+            return austrip(energy)
         end
     end
     return fg!
@@ -73,7 +72,7 @@ function optimize_geometry(system::AbstractSystem, calculator;
         method=Optim.NelderMead(),
         optim_options=Optim.Options(show_trace=true,extended_trace=true), kwargs...)
     # Use current system parameters as starting positions.
-    x0 = austrip.(get_optimizable_coordinates_cart(system)) # Optim modifies x0 in-place, so need a mutable type.
+    x0 = Vector(austrip.(get_optimizable_coordinates(system))) # Optim modifies x0 in-place, so need a mutable type.
 
     if no_gradients
         f = construct_optimization_function(system, calculator; kwargs...)
