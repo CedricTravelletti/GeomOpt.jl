@@ -10,9 +10,6 @@ using OptimizationOptimJL
 using GeomOpt
 
 
-kgrid = [1, 1, 1]       # k-point grid
-Ecut = 10.0                # kinetic energy cutoff in Hartree
-tol = 1e-7              # tolerance for the optimization routine
 a = 10.                  # Big box around the atoms.
 lattice = a * I(3)
 H = ElementPsp(:H; psp=load_psp("hgh/lda/h-q1"));
@@ -24,10 +21,13 @@ system = periodic_system(lattice, atoms, positions)
 # system = clamp_atoms(system, [1])
 
 # Create a simple calculator for the model.
-calculator = DFTKCalculator(system; Ecut, kgrid, tol, verbose_scf=true)
+model_kwargs = (; )
+basis_kwargs = (; kgrid = [1, 1, 1], Ecut = 10.0)
+scf_kwargs = (; tol = 1e-7)
+calculator = DFTKCalculator(system; model_kwargs, basis_kwargs, scf_kwargs)
 
 solver = OptimizationOptimJL.LBFGS()
-optim_options = (f_tol=1e-6, iterations=6, show_trace=true,extended_trace=true)
+optim_options = (f_tol=1e-32, iterations=20, show_trace=true,extended_trace=true)
 
 results = optimize_geometry(system, calculator; solver=solver, optim_options...)
 println(results)
