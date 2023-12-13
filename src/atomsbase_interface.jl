@@ -61,16 +61,6 @@ function get_optimizable_mask(system::AbstractSystem)
     [haskey(a, :optimizable) ? a[:optimizable] : true for a in system.particles]
 end
 
-@doc raw"""
-    Given a list of vectors and a mask, return the masked version in a one-dimensional list.
-    This is used to concatenate the forces returned in the scfres into a single list, 
-    that can be used by the optimizer.
-
-    """
-function mask_vector_list(x::AbstractVector{<:AbstractVector{<:Any}}, mask::AbstractVector{<:Bool})
-    collect(Iterators.flatten(x[mask]))
-end
-
 function get_optimizable_coordinates(system::AbstractSystem)
     mask = get_optimizable_mask(system)
     return collect(Iterators.flatten(system[mask, :position]))

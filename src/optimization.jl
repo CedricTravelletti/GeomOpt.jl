@@ -35,14 +35,18 @@ function construct_optimization_function(system::AbstractSystem, calculator; kwa
 end
 
 function construct_optimization_function_w_gradients(system::AbstractSystem, calculator; kwargs...)
+    mask = get_optimizable_mask(system) # mask is assumed not to change during optim.
+
     fg! = function(F::Union{Nothing, Real}, G::Union{Nothing, AbstractVector{<:Real}}, x::AbstractVector{<:Real})
         x = 1u"bohr" .* x # Work in atomic units.
         new_system = update_optimizable_coordinates(system, x)
         energy = AtomsCalculators.potential_energy(new_system, calculator; kwargs...)
         if G != nothing
             forces = AtomsCalculators.forces(new_system, calculator; kwargs...)
+
             # Translate the forces vectors on each particle to a single gradient for the optimization parameter.
-            forces_concat = mask_vector_list(forces, get_optimizable_mask(new_system))
+            forces_concat = collect(Iterators.flatten(forces[mask]))
+
             # NOTE: minus sign since forces are opposite to gradient.
             G .= - austrip.(forces_concat)
         end
@@ -53,20 +57,6 @@ function construct_optimization_function_w_gradients(system::AbstractSystem, cal
     return fg!
 end
 
-function optimize_geometry(system::AbstractSystem, calculator, x0::AbstractVector{<:Real};
-        no_gradients=false,
-        method=Optim.NelderMead(),
-        optim_options=Optim.Options(show_trace=true,extended_trace=true), kwargs...)
-    x0 = Vector(x0) # Optim modifies x0 in-place, so need a mutable type.
-
-    if no_gradients
-        f = construct_optimization_function(system, calculator; kwargs...)
-    else
-        fg! = construct_optimization_function_w_gradients(system, calculator; kwargs...)
-        f = Optim.only_fg!(fg!)
-    end
-    optimize(f, x0, method, optim_options; kwargs...)
-end
 function optimize_geometry(system::AbstractSystem, calculator;
         no_gradients=false,
         method=Optim.NelderMead(),
