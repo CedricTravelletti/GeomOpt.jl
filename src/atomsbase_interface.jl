@@ -8,38 +8,8 @@
 #
 # IMPORTANT: Note that we always work in cartesian coordinates.
 #
-export fractional_to_cartesian, cartesian_to_fractional, update_positions
-export update_optimizable_coordinates, set_optimizable_mask
-export get_optimizable_mask, get_optimizable_coordinates, mask_vector_list, clamp_atoms
+export update_positions, update_optimizable_coordinates, clamp_atoms
 
-@doc raw"""
-    fractional_to_cartesian(system::AbstractSystem, positions::AbstractVector{<:AbstractVector{<:Real}})
-
-Given a list of fractional coordinates, convert them to cartesian.
-"""
-function fractional_to_cartesian(system::AbstractSystem, positions::AbstractVector{<:AbstractVector{<:Real}})
-    [fractional_to_cartesian(system, position) for position in positions]
-end
-function fractional_to_cartesian(system::AbstractSystem, positions::AbstractVector{<:Real})
-    # Get lattice matrix for converting fractional to cartesian.
-    lattice = hcat(system.bounding_box...)
-    lattice * positions
-end
-
-@doc raw"""
-    cartesian_to_fractional(system::AbstractSystem, positions::AbstractVector{<:AbstractVector{<:Real}})
-
-Given a list of cartesian coordinates, convert them to fractional.
-"""
-function cartesian_to_fractional(system::AbstractSystem, positions::AbstractVector{<:AbstractVector{<:Unitful.Length}})
-    [cartesian_to_fractional(system, position) for position in positions]
-end
-function cartesian_to_fractional(system::AbstractSystem, positions::AbstractVector{<:Unitful.Length})
-    # Get lattice matrix for converting fractional to cartesian.
-    lattice = hcat(system.bounding_box...)
-    # Make sure we are working in the same units. Have to strip for the dimensionless product.
-    inv(ustrip(uconvert.(u"angstrom", lattice))) * ustrip(uconvert.(u"angstrom",positions))
-end
 
 @doc raw"""
     update_postions(system::AbstractSystem, positions::Vector{<:AbstractVector{<:Real}}) where {L <: Unitful.Length}
