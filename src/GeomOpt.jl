@@ -1,7 +1,8 @@
 module GeomOpt
 using LinearAlgebra
 using StaticArrays
-using Optim, LineSearches
+using Optimization, Optim, LineSearches
+using OptimizationOptimJL
 using AtomsBase
 using AtomsCalculators
 using Unitful

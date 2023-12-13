@@ -8,7 +8,7 @@ using AtomsCalculators
 using Unitful
 using UnitfulAtomic
 using Random
-using Optim, LineSearches
+using OptimizationOptimJL
 
 using GeomOpt
 
@@ -44,14 +44,13 @@ energy_true = AtomsCalculators.potential_energy(al_supercell, calculator)
 Random.seed!(1234)
 x0 = vcat(position(al_supercell)...)
 σ = 0.5u"angstrom"; x0_pert = x0 + σ * rand(Float64, size(x0))
-update_optimizable_coordinates(al_supercell, x0_pert)
+al_supercell = update_optimizable_coordinates(al_supercell, x0_pert)
 energy_pert = AtomsCalculators.potential_energy(al_supercell, calculator)
 
 @printf "Initial guess distance (norm) from true parameters %.3e bohrs.\n" austrip(norm(x0 - x0_pert))
 @printf "Initial regret %.3e.\n" energy_pert - energy_true
 
-method = Optim.LBFGS()
-optim_options = Optim.Options(f_tol=1e-32, iterations=5, show_trace=true,extended_trace=true)
+optim_options = (f_tol=1e-6, iterations=6, show_trace=true,extended_trace=true)
 
-results = optimize_geometry(al_supercell, calculator; method=method, optim_options=optim_options)
+results = optimize_geometry(al_supercell, calculator; optim_options...)
 println(results)

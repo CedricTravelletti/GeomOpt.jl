@@ -5,7 +5,7 @@ using LinearAlgebra
 using DFTK
 using Unitful
 using UnitfulAtomic
-using Optim
+using OptimizationOptimJL
 
 using GeomOpt
 
@@ -26,9 +26,9 @@ system = periodic_system(lattice, atoms, positions)
 # Create a simple calculator for the model.
 calculator = DFTKCalculator(system; Ecut, kgrid, tol, verbose_scf=true)
 
-method = Optim.LBFGS()
-optim_options = Optim.Options(f_tol=1e-6, iterations=6, show_trace=true,extended_trace=true)
+solver = OptimizationOptimJL.LBFGS()
+optim_options = (f_tol=1e-6, iterations=6, show_trace=true,extended_trace=true)
 
-results = optimize_geometry(system, calculator; method=method, optim_options=optim_options)
+results = optimize_geometry(system, calculator; solver=solver, optim_options...)
 println(results)
 @printf "Bond length: %3f bohrs.\n" norm(results.minimizer[1:3] - results.minimizer[4:end])

@@ -12,11 +12,7 @@ IMPORTANT: Note that we always work in cartesian coordinates.
 
 =#
 
-# TODO: Optimization with only_fg! does not seem to be working (function is re-called upon gradient computation). 
-# Given that the initial guess in the SCF now reduces that computation time to nothing, do we really want 
-# to use this convoluted syntax?
-
-export construct_optimization_function, construct_optimization_function_w_gradients, optimize_geometry
+export optimize_geometry
 
 
 """ 
@@ -37,38 +33,41 @@ end
 function construct_optimization_function_w_gradients(system::AbstractSystem, calculator; kwargs...)
     mask = get_optimizable_mask(system) # mask is assumed not to change during optim.
 
-    fg! = function(F::Union{Nothing, Real}, G::Union{Nothing, AbstractVector{<:Real}}, x::AbstractVector{<:Real})
+    f = function(x::AbstractVector{<:Real}, p)
         x = 1u"bohr" .* x # Work in atomic units.
         new_system = update_optimizable_coordinates(system, x)
         energy = AtomsCalculators.potential_energy(new_system, calculator; kwargs...)
-        if G != nothing
-            forces = AtomsCalculators.forces(new_system, calculator; kwargs...)
-
-            # Translate the forces vectors on each particle to a single gradient for the optimization parameter.
-            forces_concat = collect(Iterators.flatten(forces[mask]))
-
-            # NOTE: minus sign since forces are opposite to gradient.
-            G .= - austrip.(forces_concat)
-        end
-        if F != nothing
-            return austrip(energy)
-        end
+        return austrip(energy)
     end
-    return fg!
+
+    g! = function(G::AbstractVector{<:Real}, x::AbstractVector{<:Real}, p)
+        x = 1u"bohr" .* x # Work in atomic units.
+        new_system = update_optimizable_coordinates(system, x)
+        energy = AtomsCalculators.potential_energy(new_system, calculator; kwargs...)
+
+        forces = AtomsCalculators.forces(new_system, calculator; kwargs...)
+        # Translate the forces vectors on each particle to a single gradient for the optimization parameter.
+        forces_concat = collect(Iterators.flatten(forces[mask]))
+
+        # NOTE: minus sign since forces are opposite to gradient.
+        G .= - austrip.(forces_concat)
+    end
+    return (f, g!)
 end
 
 function optimize_geometry(system::AbstractSystem, calculator;
-        no_gradients=false,
-        method=Optim.NelderMead(),
-        optim_options=Optim.Options(show_trace=true,extended_trace=true), kwargs...)
+        no_gradients=false, solver=Optim.LBFGS(), kwargs...)
+
     # Use current system parameters as starting positions.
     x0 = Vector(austrip.(get_optimizable_coordinates(system))) # Optim modifies x0 in-place, so need a mutable type.
 
     if no_gradients
-        f = construct_optimization_function(system, calculator; kwargs...)
+        f = construct_optimization_function(system, calculator)
+        f_opt = OptimizationFunction(f)
     else
-        fg! = construct_optimization_function_w_gradients(system, calculator; kwargs...)
-        f = Optim.only_fg!(fg!)
+        (f, g!) = construct_optimization_function_w_gradients(system, calculator)
+        f_opt = OptimizationFunction(f; grad=g!)
     end
-    optimize(f, x0, method, optim_options; kwargs...)
+    problem = OptimizationProblem(f_opt, x0, nothing) # Last argument needed in Optimization.jl.
+    solve(problem, solver; kwargs...)
 end
