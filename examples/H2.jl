@@ -21,7 +21,7 @@ system = periodic_system(lattice, atoms, positions)
 # system = clamp_atoms(system, [1])
 
 # Create a simple calculator for the model.
-model_kwargs = (; )
+model_kwargs = (; functionals = [:lda_x, :lda_c_pw])
 basis_kwargs = (; kgrid = [1, 1, 1], Ecut = 10.0)
 scf_kwargs = (; tol = 1e-7)
 calculator = DFTKCalculator(system; model_kwargs, basis_kwargs, scf_kwargs)

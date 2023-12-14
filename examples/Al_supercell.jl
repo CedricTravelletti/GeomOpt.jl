@@ -4,6 +4,7 @@ using Printf
 using LinearAlgebra
 using DFTK
 using ASEconvert
+using LazyArtifacts
 using AtomsCalculators
 using Unitful
 using UnitfulAtomic
@@ -12,11 +13,13 @@ using OptimizationOptimJL
 
 using GeomOpt
 
+# Get PseudoDojo pseudopotential.
+psp_upf  = load_psp(artifact"pd_nc_sr_lda_standard_0.4.1_upf/Al.upf");
 
 function build_al_supercell(rep=1)
     a = 7.65339 # true lattice constant.
     lattice = a * Matrix(I, 3, 3)
-    Al = ElementPsp(:Al; psp=load_psp("hgh/lda/al-q3"))
+    Al = ElementPsp(:Al; psp=psp_upf)
     atoms     = [Al, Al, Al, Al]
     positions = [[0.0, 0.0, 0.0], [0.0, 0.5, 0.5], [0.5, 0.0, 0.5], [0.5, 0.5, 0.0]]
     unit_cell = periodic_system(lattice, atoms, positions)
@@ -36,8 +39,8 @@ end;
 al_supercell = build_al_supercell(1)
 
 # Create a simple calculator for the model.
-model_kwargs = (; temperature = 1e-4)
-basis_kwargs = (; kgrid = [5, 5, 5], Ecut = 20.0)
+model_kwargs = (; functionals = [:lda_x, :lda_c_pw], temperature = 1e-4)
+basis_kwargs = (; kgrid = [8, 8, 8], Ecut = 30.0)
 scf_kwargs = (; tol = 1e-6)
 calculator = DFTKCalculator(al_supercell; model_kwargs, basis_kwargs, scf_kwargs, verbose_scf=true)
 
